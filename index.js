@@ -3,15 +3,11 @@
  * @param {import('probot').Application} app - Probot's Application class.
  */
 module.exports = app => {
-	// Get an express router to expose new HTTP endpoints
   const router = app.route('/probot')
-	// prometheus metrics
   const client = require('prom-client')
   const Registry = client.Registry
   const register = new Registry()
   const collectDefaultMetrics = client.collectDefaultMetrics
-
-	// Probe every 5th second.
 
   collectDefaultMetrics({
     register,
@@ -19,7 +15,6 @@ module.exports = app => {
     prefix: 'default_'
   })
 
-	// register metrics on startup
   const prom = new client.Summary({
     name: 'builds_duration_ms',
     help: 'The number of builds that have executed',
@@ -42,7 +37,6 @@ module.exports = app => {
     res.end(register.metrics())
   })
 
-	// Lets test incrementing the build count
   router.get('/test_count', (req, res) => {
     app.log('GET -> /reset.')
     prom.reset()
@@ -59,7 +53,6 @@ module.exports = app => {
 
   app.on('check_run.completed', async context => {
     app.log('check_run.completed -> called ')
-		// app.log(JSON.stringify(context))
 
     const observation = {
       action: context.payload.action, // .action
@@ -82,10 +75,4 @@ module.exports = app => {
     prom.observe(observation, duration)
     app.log('check_run.created -> done')
   })
-
-	// For more information on building apps:
-	// https://probot.github.io/docs/
-
-	// To get your app running against GitHub, see:
-	// https://probot.github.io/docs/development/
 }

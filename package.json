@@ -11,8 +11,8 @@
 	"scripts": {
 		"dev": "nodemon --exec \"npm start\"",
 		"start": "probot run ./index.js",
-		"lint": "exit 0",
-		"test": "exit 0",
+		"lint": "standard --fix",
+		"test": "jest && standard",
 		"coverage": "jest --coverage",
 		"test:watch": "jest --watch --notify --notifyMode=change --coverage"
 	},
@@ -31,7 +31,7 @@
 		"standard": "^10.0.3"
 	},
 	"engines": {
-		"node": "8.3.0"
+		"node": ">= 8.3.0 <8.12.0"
 	},
 	"standard": {
 		"env": [ "jest" ]
