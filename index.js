@@ -4,88 +4,88 @@
  */
 module.exports = app => {
 	// Get an express router to expose new HTTP endpoints
-	const router = app.route('/probot');
+  const router = app.route('/probot')
 	// prometheus metrics
-	const client = require('prom-client');
-	const Registry = client.Registry;
-	const register = new Registry();
-	const collectDefaultMetrics = client.collectDefaultMetrics;
+  const client = require('prom-client')
+  const Registry = client.Registry
+  const register = new Registry()
+  const collectDefaultMetrics = client.collectDefaultMetrics
 
 	// Probe every 5th second.
 
-	collectDefaultMetrics({
-		register,
-		timeout: 5000,
-		prefix: 'default_'
-	});
+  collectDefaultMetrics({
+    register,
+    timeout: 5000,
+    prefix: 'default_'
+  })
 
 	// register metrics on startup
-	const prom = new client.Summary({
-		name: 'builds_duration_ms',
-		help: 'The number of builds that have executed',
-		maxAgeSeconds: 60, // 1 minute sliding window
-		ageBuckets: 100, // for 100 builds
-		labelNames: [
-			'action', // action
-			'name',
-			'check_run_status',
-			'check_run_conclusion',
-			'repository_full_name',
-			'repository_name'
-		],
-		registers: [ register ]
-	});
+  const prom = new client.Summary({
+    name: 'builds_duration_ms',
+    help: 'The number of builds that have executed',
+    maxAgeSeconds: 60, // 1 minute sliding window
+    ageBuckets: 100, // for 100 builds
+    labelNames: [
+      'action', // action
+      'name',
+      'check_run_status',
+      'check_run_conclusion',
+      'repository_full_name',
+      'repository_name'
+    ],
+    registers: [ register ]
+  })
 
-	router.get('/metrics', (req, res) => {
-		app.log('GET -> metrics called.');
-		res.set('Content-Type', register.contentType);
-		res.end(register.metrics());
-	});
+  router.get('/metrics', (req, res) => {
+    app.log('GET -> metrics called.')
+    res.set('Content-Type', register.contentType)
+    res.end(register.metrics())
+  })
 
 	// Lets test incrementing the build count
-	router.get('/test_count', (req, res) => {
-		app.log('GET -> /reset.');
-		prom.reset();
+  router.get('/test_count', (req, res) => {
+    app.log('GET -> /reset.')
+    prom.reset()
 
-		res.send('Counter reset ' + new Date());
-	});
+    res.send('Counter reset ' + new Date())
+  })
 
-	app.log('Yay, the app was loaded!');
+  app.log('Yay, the app was loaded!')
 
-	app.on('issues.opened', async context => {
-		const issueComment = context.issue({ body: 'Thanks for opening this issue! It worked.' });
-		return context.github.issues.createComment(issueComment);
-	});
+  app.on('issues.opened', async context => {
+    const issueComment = context.issue({ body: 'Thanks for opening this issue! It worked.' })
+    return context.github.issues.createComment(issueComment)
+  })
 
-	app.on('check_run.completed', async context => {
-		app.log('check_run.completed -> called ');
+  app.on('check_run.completed', async context => {
+    app.log('check_run.completed -> called ')
 		// app.log(JSON.stringify(context))
 
-		const observation = {
-			action: context.payload.action, // .action
-			name: context.payload.check_run.name,
-			check_run_status: context.payload.check_run.status,
-			check_run_conclusion: context.payload.check_run.conclusion,
-			repository_full_name: context.payload.repository.full_name, // repository.full_name
-			repository_name: context.payload.repository.name
-		};
-		const duration = new Date(context.payload.check_run.completed_at) - new Date(context.payload.check_run.started_at);
+    const observation = {
+      action: context.payload.action, // .action
+      name: context.payload.check_run.name,
+      check_run_status: context.payload.check_run.status,
+      check_run_conclusion: context.payload.check_run.conclusion,
+      repository_full_name: context.payload.repository.full_name, // repository.full_name
+      repository_name: context.payload.repository.name
+    }
+    const duration = new Date(context.payload.check_run.completed_at) - new Date(context.payload.check_run.started_at)
 
-		app.log('observation.action -> ' + observation.action);
-		app.log('observation.name -> ' + observation.name);
-		app.log('observation.check_run_status -> ' + observation.check_run_status);
-		app.log('observation.check_run_conclusion -> ' + observation.check_run_conclusion);
-		app.log('observation.repository_full_name -> ' + observation.repository_full_name);
-		app.log('observation.repository_name -> ' + observation.repository_name);
-		app.log('duration -> ' + duration);
+    app.log('observation.action -> ' + observation.action)
+    app.log('observation.name -> ' + observation.name)
+    app.log('observation.check_run_status -> ' + observation.check_run_status)
+    app.log('observation.check_run_conclusion -> ' + observation.check_run_conclusion)
+    app.log('observation.repository_full_name -> ' + observation.repository_full_name)
+    app.log('observation.repository_name -> ' + observation.repository_name)
+    app.log('duration -> ' + duration)
 
-		prom.observe(observation, duration);
-		app.log('check_run.created -> done');
-	});
+    prom.observe(observation, duration)
+    app.log('check_run.created -> done')
+  })
 
 	// For more information on building apps:
 	// https://probot.github.io/docs/
 
 	// To get your app running against GitHub, see:
 	// https://probot.github.io/docs/development/
-};
+}
